@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 /* ─── tiny intersection-observer fade-in ─── */
@@ -24,6 +24,94 @@ function FadeSection({ children, className = '' }: { children: React.ReactNode; 
   return (
     <div ref={ref} className={`fade-section ${className}`}>
       {children}
+    </div>
+  );
+}
+
+/* ─── live top movers ─── */
+interface Mover {
+  symbol: string;
+  network: string;
+  priceUsd: number;
+  priceChange1h: number;
+  volume1h: number;
+  address: string;
+}
+
+const CHAIN_COLORS: Record<string, string> = {
+  solana: '#9945FF', eth: '#627EEA', base: '#0052FF',
+  bsc: '#F3BA2F', arbitrum: '#28A0F0', polygon_pos: '#8247E5', avax: '#E84142',
+};
+
+function formatUsd(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
+  if (n >= 1) return `$${n.toFixed(2)}`;
+  if (n >= 0.001) return `$${n.toFixed(4)}`;
+  return `$${n.toFixed(8)}`;
+}
+
+function TopMovers() {
+  const [movers, setMovers] = useState<Mover[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/trending')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((pools: Array<{ baseToken: { symbol: string }; network: string; priceUsd: number; priceChange1h: number; volume1h: number; address: string }>) => {
+        const sorted = [...pools]
+          .filter(p => p.priceChange1h > 0)
+          .sort((a, b) => b.priceChange1h - a.priceChange1h)
+          .slice(0, 5)
+          .map(p => ({
+            symbol: p.baseToken.symbol,
+            network: p.network,
+            priceUsd: p.priceUsd,
+            priceChange1h: p.priceChange1h,
+            volume1h: p.volume1h,
+            address: p.address,
+          }));
+        setMovers(sorted);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex gap-4 justify-center">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-24 w-44 rounded-xl animate-pulse" style={{ background: 'rgba(26,58,42,0.06)' }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (movers.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap justify-center gap-3">
+      {movers.map((m, i) => (
+        <Link key={i} href={`/app/token/${m.network}/${m.address}`}
+          className="group flex flex-col gap-1.5 px-5 py-4 rounded-xl border transition-all hover:shadow-md hover:scale-[1.02]"
+          style={{ borderColor: 'rgba(26,58,42,0.08)', background: 'var(--cream-50)', minWidth: '160px' }}>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CHAIN_COLORS[m.network] || '#888' }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--forest)' }}>{m.symbol}</span>
+          </div>
+          <div className="text-xs" style={{ fontFamily: "'JetBrains Mono', monospace", color: 'rgba(26,58,42,0.6)' }}>
+            {formatUsd(m.priceUsd)}
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-semibold" style={{ fontFamily: "'JetBrains Mono', monospace", color: '#16a34a' }}>
+              +{m.priceChange1h.toFixed(1)}%
+            </span>
+            <span className="text-[10px]" style={{ color: 'rgba(26,58,42,0.35)' }}>
+              {formatUsd(m.volume1h)} vol
+            </span>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -106,7 +194,7 @@ export default function LandingPage() {
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
             </a>
-            <Link href="/"
+            <Link href="/app"
               className="px-5 py-2 rounded-full text-sm font-medium transition-all hover:scale-[1.03] active:scale-[0.98]"
               style={{ background: 'var(--lavender)', color: 'var(--forest)' }}>
               Open App →
@@ -145,7 +233,7 @@ export default function LandingPage() {
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/"
+            <Link href="/app"
               className="px-8 py-3.5 rounded-full text-base font-medium transition-all hover:scale-[1.03] active:scale-[0.98] shadow-lg"
               style={{ background: 'var(--lavender)', color: 'var(--forest)', boxShadow: '0 8px 32px rgba(196,181,253,0.35)' }}>
               Launch Screener
@@ -268,6 +356,58 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ───── Stop paying — dark ───── */}
+      <FadeSection>
+        <section className="py-20 md:py-28" style={{ background: 'var(--forest)' }}>
+          <div className="max-w-4xl mx-auto px-6 text-center">
+            <h2 className="text-4xl md:text-5xl mb-6" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--cream)' }}>
+              <span className="font-normal">Same data.</span>
+              <br />
+              <span className="italic font-medium" style={{ color: 'var(--lavender)' }}>Zero fees.</span>
+            </h2>
+            <p className="text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: 'rgba(245,240,232,0.5)' }}>
+              Other screeners charge hundreds a month for promoted listings, premium tiers, and ad-free views. We think token data should be free. LightScreener gives you everything — trending, new pairs, charts, whale alerts, rug analysis — without paying a cent or creating an account.
+            </p>
+            <div className="flex flex-wrap justify-center gap-6">
+              {[
+                { label: 'Trending data', free: true },
+                { label: 'Whale alerts', free: true },
+                { label: 'Rug scores', free: true },
+                { label: 'Multi-chain', free: true },
+                { label: 'No ads', free: true },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--lavender)' }} />
+                  <span className="text-sm" style={{ color: 'rgba(245,240,232,0.65)' }}>{item.label}</span>
+                  <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(196,181,253,0.15)', color: 'var(--lavender)' }}>
+                    free
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </FadeSection>
+
+      {/* ───── Live Top Movers — cream ───── */}
+      <FadeSection>
+        <section className="py-20 md:py-28" style={{ background: 'var(--cream)' }}>
+          <div className="max-w-5xl mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl mb-4" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--forest)' }}>
+                <span className="font-normal">Winning </span>
+                <span className="italic font-medium" style={{ color: 'var(--lavender)' }}>right now</span>
+              </h2>
+              <p className="text-base max-w-md mx-auto" style={{ color: 'rgba(26,58,42,0.45)' }}>
+                Top gainers in the last hour, updated live.
+              </p>
+            </div>
+            <TopMovers />
+          </div>
+        </section>
+      </FadeSection>
 
       {/* ───── Chains — dark ───── */}
       <FadeSection>
@@ -420,7 +560,7 @@ export default function LandingPage() {
             <p className="text-base mb-10 max-w-md mx-auto" style={{ color: 'rgba(26,58,42,0.45)' }}>
               Free. No account. No API keys. Just open the app and go.
             </p>
-            <Link href="/"
+            <Link href="/app"
               className="inline-block px-10 py-4 rounded-full text-lg font-medium transition-all hover:scale-[1.03] active:scale-[0.98] shadow-xl"
               style={{ background: 'var(--lavender)', color: 'var(--forest)', boxShadow: '0 12px 40px rgba(196,181,253,0.4)' }}>
               Launch LightScreener →

@@ -31,7 +31,7 @@ export function TokenRow({ pool, index }: TokenRowProps) {
       </td>
       <td>
         <Link
-          href={`/token/${pool.network}/${pool.address}`}
+          href={`/app/token/${pool.network}/${pool.address}`}
           className="flex items-center gap-2.5"
         >
           <div className="w-7 h-7 rounded-full bg-forest/5 flex items-center justify-center text-[9px] overflow-hidden shrink-0 ring-1 ring-forest/8">

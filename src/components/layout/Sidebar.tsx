@@ -6,10 +6,10 @@ import { SearchBar } from './SearchBar';
 import { CHAINS } from '@/lib/chains';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Trending', icon: '🔥' },
-  { href: '/fresh-meat', label: 'Fresh Meat', icon: '🥩' },
-  { href: '/mooners', label: 'Mooners', icon: '🚀' },
-  { href: '/rugged', label: 'Rugged', icon: '💀' },
+  { href: '/app', label: 'Trending', icon: '🔥' },
+  { href: '/app/fresh-meat', label: 'Fresh Meat', icon: '🥩' },
+  { href: '/app/mooners', label: 'Mooners', icon: '🚀' },
+  { href: '/app/rugged', label: 'Rugged', icon: '💀' },
 ];
 
 const TOOLS = [
@@ -24,7 +24,7 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex w-[200px] shrink-0 flex-col border-r border-cream-300/80 overflow-y-auto">
       <div className="p-4 pb-3">
-        <Link href="/" className="flex items-center gap-2 mb-4">
+        <Link href="/app" className="flex items-center gap-2 mb-4">
           <span className="text-base font-serif font-bold text-forest tracking-tight">Screener</span>
         </Link>
         <SearchBar />
@@ -33,8 +33,8 @@ export function Sidebar() {
       <nav className="px-3 pb-2">
         {NAV_ITEMS.map((item) => {
           const isActive =
-            item.href === '/'
-              ? pathname === '/'
+            item.href === '/app'
+              ? pathname === '/app'
               : pathname.startsWith(item.href);
           return (
             <Link
