@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const NETWORKS = [
   { id: 'solana', name: 'Solana', color: '#9945FF' },
@@ -15,13 +16,116 @@ const NETWORKS = [
 
 type Status = 'idle' | 'submitting' | 'success' | 'duplicate' | 'error';
 
+function ImageUpload({
+  label,
+  hint,
+  preview,
+  onFile,
+  aspect,
+}: {
+  label: string;
+  hint: string;
+  preview: string | null;
+  onFile: (file: File) => void;
+  aspect: 'square' | 'banner';
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+
+  return (
+    <div>
+      <label className="block text-xs uppercase tracking-widest mb-2 font-medium" style={{ color: 'rgba(26,58,42,0.4)' }}>
+        {label}
+      </label>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => ref.current?.click()}
+        className="w-full rounded-xl border transition-all hover:border-lavender/40 overflow-hidden group"
+        style={{
+          borderColor: 'rgba(26,58,42,0.12)',
+          background: 'var(--cream-50)',
+          aspectRatio: aspect === 'banner' ? '4/1' : undefined,
+        }}
+      >
+        {preview ? (
+          <div className="relative w-full" style={{ aspectRatio: aspect === 'banner' ? '4/1' : '1/1', maxHeight: aspect === 'square' ? 120 : undefined }}>
+            <Image src={preview} alt="" fill className="object-cover" unoptimized />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+              <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium transition-opacity">Change</span>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="flex flex-col items-center justify-center gap-1.5 py-6"
+            style={{ minHeight: aspect === 'square' ? 120 : undefined }}
+          >
+            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(26,58,42,0.06)' }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="opacity-30">
+                <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </div>
+            <span className="text-[11px]" style={{ color: 'rgba(26,58,42,0.35)' }}>{hint}</span>
+          </div>
+        )}
+      </button>
+    </div>
+  );
+}
+
+const FEATURES = [
+  {
+    icon: '🧠',
+    title: 'AI Safety Ranking',
+    desc: 'Every listed token gets an AI-powered safety score analyzing liquidity locks, holder concentration, mint authority, and developer wallet behavior.',
+  },
+  {
+    icon: '🐋',
+    title: 'Real-time Whale Alerts',
+    desc: 'Get notified when whales move. Our live stream tracks large transactions so your community sees momentum as it happens.',
+  },
+  {
+    icon: '🔍',
+    title: 'Sniper & Honeypot Detection',
+    desc: 'We flag snipers who bought in the first blocks and detect honeypot patterns from buy/sell tax asymmetry — automatically.',
+  },
+  {
+    icon: '✦',
+    title: 'Community Picks',
+    desc: 'Listed tokens appear in a dedicated Community Picks section, giving your project organic visibility among active traders.',
+  },
+];
+
 export default function GetListedPage() {
   const [address, setAddress] = useState('');
   const [network, setNetwork] = useState('solana');
   const [twitter, setTwitter] = useState('');
   const [description, setDescription] = useState('');
+  const [website, setWebsite] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('idle');
   const [result, setResult] = useState<{ verified: boolean; symbol: string } | null>(null);
+
+  const handleLogo = (file: File) => {
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
+
+  const handleBanner = (file: File) => {
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +136,15 @@ export default function GetListedPage() {
       const res = await fetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: address.trim(), network, twitter: twitter.trim(), description: description.trim() }),
+        body: JSON.stringify({
+          address: address.trim(),
+          network,
+          twitter: twitter.trim(),
+          description: description.trim(),
+          website: website.trim(),
+          hasLogo: !!logoFile,
+          hasBanner: !!bannerFile,
+        }),
       });
       const data = await res.json();
 
@@ -50,6 +162,19 @@ export default function GetListedPage() {
     } catch {
       setStatus('error');
     }
+  };
+
+  const resetForm = () => {
+    setStatus('idle');
+    setAddress('');
+    setTwitter('');
+    setDescription('');
+    setWebsite('');
+    setLogoFile(null);
+    setLogoPreview(null);
+    setBannerFile(null);
+    setBannerPreview(null);
+    setResult(null);
   };
 
   return (
@@ -100,7 +225,7 @@ export default function GetListedPage() {
                 View in App →
               </Link>
               <button
-                onClick={() => { setStatus('idle'); setAddress(''); setTwitter(''); setDescription(''); setResult(null); }}
+                onClick={resetForm}
                 className="px-6 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-[1.03] border"
                 style={{ borderColor: 'rgba(26,58,42,0.15)', color: 'rgba(26,58,42,0.6)' }}>
                 Submit another
@@ -109,6 +234,24 @@ export default function GetListedPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Token Logo & Banner side by side */}
+            <div className="grid grid-cols-[120px_1fr] gap-4">
+              <ImageUpload
+                label="Token Logo"
+                hint="Square, 256px+"
+                preview={logoPreview}
+                onFile={handleLogo}
+                aspect="square"
+              />
+              <ImageUpload
+                label="Banner Image"
+                hint="Wide banner, 1200×300 recommended"
+                preview={bannerPreview}
+                onFile={handleBanner}
+                aspect="banner"
+              />
+            </div>
+
             {/* Contract Address */}
             <div>
               <label className="block text-xs uppercase tracking-widest mb-2 font-medium" style={{ color: 'rgba(26,58,42,0.4)' }}>
@@ -154,23 +297,42 @@ export default function GetListedPage() {
               </div>
             </div>
 
-            {/* Twitter */}
-            <div>
-              <label className="block text-xs uppercase tracking-widest mb-2 font-medium" style={{ color: 'rgba(26,58,42,0.4)' }}>
-                Project X / Twitter
-              </label>
-              <input
-                type="text"
-                value={twitter}
-                onChange={(e) => setTwitter(e.target.value)}
-                placeholder="@yourproject"
-                className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-lavender/30"
-                style={{
-                  borderColor: 'rgba(26,58,42,0.12)',
-                  background: 'var(--cream-50)',
-                  color: 'var(--forest)',
-                }}
-              />
+            {/* Twitter + Website side by side */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs uppercase tracking-widest mb-2 font-medium" style={{ color: 'rgba(26,58,42,0.4)' }}>
+                  Project X / Twitter
+                </label>
+                <input
+                  type="text"
+                  value={twitter}
+                  onChange={(e) => setTwitter(e.target.value)}
+                  placeholder="@yourproject"
+                  className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-lavender/30"
+                  style={{
+                    borderColor: 'rgba(26,58,42,0.12)',
+                    background: 'var(--cream-50)',
+                    color: 'var(--forest)',
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest mb-2 font-medium" style={{ color: 'rgba(26,58,42,0.4)' }}>
+                  Website
+                </label>
+                <input
+                  type="text"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://yourproject.com"
+                  className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-lavender/30"
+                  style={{
+                    borderColor: 'rgba(26,58,42,0.12)',
+                    background: 'var(--cream-50)',
+                    color: 'var(--forest)',
+                  }}
+                />
+              </div>
             </div>
 
             {/* Description */}
@@ -222,6 +384,72 @@ export default function GetListedPage() {
             </p>
           </form>
         )}
+
+        {/* Why LightScreener */}
+        <div className="mt-24">
+          <div className="text-center mb-10">
+            <p className="text-xs uppercase tracking-widest font-medium mb-3" style={{ color: 'var(--lavender)' }}>
+              Not just another listing
+            </p>
+            <h2 className="text-3xl md:text-4xl mb-3" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--forest)' }}>
+              <span className="font-normal">Why list on </span>
+              <span className="italic font-medium">LightScreener?</span>
+            </h2>
+            <p className="text-sm max-w-lg mx-auto" style={{ color: 'rgba(26,58,42,0.45)' }}>
+              DexScreener charges thousands for promoted listings and gives you a basic chart.
+              We give your token AI-powered analysis, whale tracking, and real visibility — for free.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {FEATURES.map((f) => (
+              <div
+                key={f.title}
+                className="p-5 rounded-2xl border transition-all hover:border-lavender/30"
+                style={{ borderColor: 'rgba(26,58,42,0.08)', background: 'var(--cream-50)' }}
+              >
+                <div className="text-2xl mb-3">{f.icon}</div>
+                <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--forest)', fontFamily: "'DM Sans', sans-serif" }}>
+                  {f.title}
+                </h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(26,58,42,0.5)' }}>
+                  {f.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Comparison strip */}
+          <div className="mt-10 rounded-2xl border overflow-hidden" style={{ borderColor: 'rgba(26,58,42,0.08)' }}>
+            <div className="grid grid-cols-3 text-center text-xs font-medium" style={{ background: 'rgba(26,58,42,0.03)' }}>
+              <div className="py-3" style={{ color: 'rgba(26,58,42,0.4)' }}>Feature</div>
+              <div className="py-3" style={{ color: 'rgba(26,58,42,0.4)' }}>DexScreener</div>
+              <div className="py-3" style={{ color: 'var(--forest)' }}>LightScreener</div>
+            </div>
+            {[
+              ['Listing cost', '$2,000+', 'Free'],
+              ['AI safety score', '—', '✓'],
+              ['Whale alerts', '—', '✓ Real-time'],
+              ['Sniper detection', '—', '✓ Automatic'],
+              ['Honeypot check', '—', '✓ Built-in'],
+              ['Community Picks', '—', '✓'],
+              ['On-chain verification', 'Basic', 'Deep analysis'],
+            ].map(([feature, dex, light], i) => (
+              <div
+                key={feature}
+                className="grid grid-cols-3 text-center text-xs border-t"
+                style={{
+                  borderColor: 'rgba(26,58,42,0.06)',
+                  background: i % 2 === 0 ? 'transparent' : 'rgba(26,58,42,0.015)',
+                }}
+              >
+                <div className="py-3 font-medium" style={{ color: 'rgba(26,58,42,0.6)' }}>{feature}</div>
+                <div className="py-3" style={{ color: 'rgba(26,58,42,0.35)' }}>{dex}</div>
+                <div className="py-3 font-medium" style={{ color: 'var(--forest)' }}>{light}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
