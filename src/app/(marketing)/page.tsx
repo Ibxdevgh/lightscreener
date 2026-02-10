@@ -186,6 +186,7 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-[var(--forest)] transition-colors">Features</a>
             <a href="#chains" className="hover:text-[var(--forest)] transition-colors">Chains</a>
             <a href="#compare" className="hover:text-[var(--forest)] transition-colors">Why us</a>
+            <Link href="/get-listed" className="hover:text-[var(--forest)] transition-colors">Get Listed</Link>
           </div>
           <div className="flex items-center gap-4">
             <a href="https://x.com/light_screener" target="_blank" rel="noopener noreferrer"
@@ -543,6 +544,37 @@ export default function LandingPage() {
                   </p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+      </FadeSection>
+
+      {/* ───── Get Listed — cream ───── */}
+      <FadeSection>
+        <section className="py-20 md:py-28" style={{ background: 'var(--cream)' }}>
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="p-10 md:p-14 rounded-2xl border relative overflow-hidden"
+              style={{ borderColor: 'rgba(26,58,42,0.08)', background: 'var(--cream-50)' }}>
+              <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, var(--lavender), transparent)' }} />
+              <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                <div className="flex-1 text-center md:text-left">
+                  <h2 className="text-3xl md:text-4xl mb-3" style={{ fontFamily: "'Playfair Display', serif", color: 'var(--forest)' }}>
+                    <span className="font-normal">Built a token?</span>
+                    <br />
+                    <span className="italic font-medium" style={{ color: 'var(--lavender)' }}>Get it listed.</span>
+                  </h2>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(26,58,42,0.45)' }}>
+                    Submit your contract address and we verify it on-chain. Free, instant, no gatekeeping. Your token shows up in Community Picks for everyone to see.
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  <Link href="/get-listed"
+                    className="inline-block px-8 py-3.5 rounded-full text-base font-medium transition-all hover:scale-[1.03] active:scale-[0.98]"
+                    style={{ background: 'var(--forest)', color: 'var(--cream)' }}>
+                    Submit Token →
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>
